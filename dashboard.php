@@ -20,7 +20,7 @@ $_SESSION['last_login_time'] = time();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Cloud Dashboard</title>
+    <title>Smart Student Attendance System - Dashboard</title>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -31,6 +31,7 @@ $_SESSION['last_login_time'] = time();
             --accent-primary: #3b82f6;
             --accent-success: #10b981;
             --accent-danger: #ef4444;
+            --input-bg: rgba(15, 23, 42, 0.6);
         }
 
         body {
@@ -43,7 +44,7 @@ $_SESSION['last_login_time'] = time();
             min-height: 100vh;
         }
 
-        /* Sidebar Navigation Layout */
+        /* Sidebar Navigation Layout (Desktop Standard) */
         .sidebar {
             width: 260px;
             background: rgba(15, 23, 42, 0.95);
@@ -54,10 +55,11 @@ $_SESSION['last_login_time'] = time();
             box-sizing: border-box;
             position: fixed;
             height: 100vh;
+            z-index: 10;
         }
 
         .sidebar-brand {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 800;
             letter-spacing: 1px;
             margin-bottom: 40px;
@@ -96,11 +98,11 @@ $_SESSION['last_login_time'] = time();
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
-        /* Main Workspace Content Area */
+        /* Main Workspace Content Area (Desktop Standard) */
         .main-content {
             flex-grow: 1;
             padding: 40px;
-            margin-left: 260px; /* Leave space for fixed sidebar */
+            margin-left: 260px;
             overflow-y: auto;
             box-sizing: border-box;
         }
@@ -155,7 +157,7 @@ $_SESSION['last_login_time'] = time();
         }
 
         .card-value {
-            font-size: 32px;
+            font-size: 35px;
             font-weight: 700;
             color: var(--text-main);
         }
@@ -169,16 +171,17 @@ $_SESSION['last_login_time'] = time();
             padding: 32px;
             border-radius: 16px;
             min-height: 200px;
+            margin-bottom: 30px;
         }
 
         /* Dynamic Panel Switching Properties */
         .tab-panel {
-            display: none; /* Hide panels by default */
+            display: none;
             animation: fadeIn 0.4s ease forwards;
         }
 
         .tab-panel.active-panel {
-            display: block; /* Only show active class panel */
+            display: block;
         }
 
         @keyframes fadeIn {
@@ -192,19 +195,86 @@ $_SESSION['last_login_time'] = time();
             padding-bottom: 2px;
         }
 
-        /* System Logs Table Formatting */
+        /* Forms Elements */
+        form {
+            display: grid;
+            gap: 15px;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        input, select {
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-primary);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        select option {
+            background: var(--bg-dark);
+            color: var(--text-main);
+        }
+
+        form button {
+            background: var(--accent-primary);
+            color: var(--text-main);
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        form button:hover {
+            background: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        /* Attendance Data Table Formatting */
+        .log-table-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Enables sliding overflow data grid safety fallback */
+        }
+
         .log-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
         }
+
         .log-table th, .log-table td {
-            text-align: left;
-            padding: 12px;
+            text-align: center;
+            padding: 14px;
             border-bottom: 1px solid var(--border-glass);
         }
-        .log-table th { color: var(--text-muted); font-size: 14px; }
-        .log-success { color: var(--accent-success); font-weight: bold; }
+
+        .log-table th { 
+            color: var(--text-muted); 
+            font-size: 14px; 
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .log-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .present { color: var(--accent-success); font-weight: bold; }
+        .absent { color: var(--accent-danger); font-weight: bold; }
 
         .logout-btn {
             display: inline-block;
@@ -224,103 +294,193 @@ $_SESSION['last_login_time'] = time();
             background: #dc2626;
             box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
         }
+
+        /* =======================================================
+           DYNAMIC RESPONSIVENESS MODULE (CSS MEDIA QUERIES)
+           ======================================================= */
+        @media screen and (max-width: 992px) {
+            body {
+                flex-direction: column; /* Stacks navigation blocks above workspace */
+            }
+
+            /* Transforms sidebar container into standard horizontal fluid top block banner */
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                padding: 20px;
+                border-right: none;
+                border-bottom: 1px solid var(--border-glass);
+            }
+
+            .sidebar-brand {
+                margin-bottom: 20px;
+                text-align: center;
+            }
+
+            .nav-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+            }
+
+            .nav-item button {
+                padding: 10px 14px;
+                font-size: 14px;
+                margin-bottom: 0;
+            }
+
+            .logout-btn {
+                margin-top: 15px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Adjust workspace offset spacing vectors */
+            .main-content {
+                margin-left: 0;
+                padding: 24px;
+            }
+
+            .header-panel {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .status-badge {
+                width: 100%;
+                text-align: center;
+                box-sizing: border-box;
+            }
+
+            .workspace-panel {
+                padding: 20px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .nav-links {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .nav-item {
+                width: 100%;
+            }
+
+            .nav-item button {
+                text-align: center;
+            }
+            
+            .log-table th, .log-table td {
+                padding: 10px 6px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
-        <div class="sidebar-brand">CORTEX SECURITY</div>
+        <div class="sidebar-brand">ATTENDANCE SYSTEM</div>
         <ul class="nav-links">
-            <li class="nav-item active" data-tab="overview"><button>Overview</button></li>
-            <li class="nav-item" data-tab="analytics"><button>Analytics</button></li>
-            <li class="nav-item" data-tab="system-logs"><button>System Logs</button></li>
-            <li class="nav-item" data-tab="settings"><button>Settings</button></li>
+            <li class="nav-item active" data-tab="overview"><button>Dashboard Overview</button></li>
+            <li class="nav-item" data-tab="register"><button>Take Attendance</button></li>
+            <li class="nav-item" data-tab="records"><button>Attendance Logs</button></li>
+            <li class="nav-item" data-tab="security"><button>Account Settings</button></li>
         </ul>
-        <a href="logout.php" class="logout-btn">Terminate Session</a>
+        <a href="logout.php" class="logout-btn">Log Out Portal</a>
     </aside>
 
     <main class="main-content">
         <header class="header-panel">
             <div>
-                <h1 id="console-title">System Control Console</h1>
-                <p style="color: var(--text-muted); margin: 4px 0 0 0;">Real-time node administration and session token monitoring.</p>
+                <h1 id="console-title">Classroom Management Portal</h1>
+                <p style="color: var(--text-muted); margin: 4px 0 0 0;">Real-time classroom monitoring and daily student log management.</p>
             </div>
-            <div class="status-badge">System Node: Secure</div>
+            <div class="status-badge">System Status: Active</div>
         </header>
 
         <section class="metrics-grid">
             <div class="card">
-                <div class="card-title">Active Environment</div>
-                <div class="card-value" style="color: #60a5fa;">Localhost</div>
+                <div class="card-title">Total Students</div>
+                <div class="card-value" id="totalStudents" style="color: #60a5fa;">0</div>
             </div>
             <div class="card">
-                <div class="card-title">Token Guard</div>
-                <div class="card-value" style="color: var(--accent-success);">Anti-CSRF</div>
+                <div class="card-title">Present Today</div>
+                <div class="card-value" id="presentStudents" style="color: var(--accent-success);">0</div>
             </div>
             <div class="card">
-                <div class="card-title">Inactivity Gate</div>
-                <div class="card-value">15m</div>
+                <div class="card-title">Absent Today</div>
+                <div class="card-value" id="absentStudents" style="color: var(--accent-danger);">0</div>
             </div>
         </section>
 
         <section class="workspace-panel">
             
             <div id="panel-overview" class="tab-panel active-panel">
-                <h3 style="margin-top: 0; font-size: 20px;">Authenticated Secure Workspace</h3>
+                <h3 style="margin-top: 0; font-size: 20px;">Instructor Administration Terminal</h3>
                 <p style="font-size: 16px; line-height: 1.6; color: #cbd5e1;">
-                    Welcome back, operator <strong class="user-highlight"><?php echo htmlspecialchars($_SESSION['username']); ?></strong>. 
-                    Your browser cryptographic handshake session variables are rendering dynamically via the local session cache loop.
+                    Welcome back, <strong class="user-highlight"><?php echo htmlspecialchars(ucwords($_SESSION['username'])); ?></strong>. 
+                    Manage your classroom presence records, review student rosters, and generate attendance insights seamlessly.
                 </p>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">
-                    All directory structures outside this gateway are hidden behind server-side routing logic arrays.
-                </p>
-            </div>
-
-            <div id="panel-analytics" class="tab-panel">
-                <h3 style="margin-top: 0; font-size: 20px;">Real-Time System Analytics</h3>
-                <p style="color: #cbd5e1;">Tracking server session handshakes and metrics allocation loops:</p>
-                <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass);">
-                    <p style="margin: 5px 0;">📊 <strong>Active Session Traffic:</strong> 100% Operational</p>
-                    <p style="margin: 5px 0;">🔒 <strong>Encryption Protocol:</strong> PASSWORD_BCRYPT (Cost: 10)</p>
-                    <p style="margin: 5px 0;">⚡ <strong>Response Latency:</strong> 0.04ms (Optimal)</p>
+                <div style="background: rgba(15, 23, 42, 0.4); padding: 24px; border-radius: 12px; border: 1px solid var(--border-glass); margin-top: 24px; display: grid; gap: 12px;">
+                    <p style="margin: 0; font-size: 14px; color: #cbd5e1;"><span style="margin-right: 8px;">📊</span> <strong>Connection Status:</strong> <span style="color: var(--accent-success);">Active & Synced</span></p>
+                    <p style="margin: 0; font-size: 14px; color: #cbd5e1;"><span style="margin-right: 8px;">🔒</span> <strong>System Security:</strong> Secured Administration Session</p>
+                    <p style="margin: 0; font-size: 14px; color: #cbd5e1;"><span style="margin-right: 8px;">⏰</span> <strong>Auto-Logout:</strong> Logs out after 15 minutes of inactivity</p>
                 </div>
             </div>
 
-            <div id="panel-system-logs" class="tab-panel">
-                <h3 style="margin-top: 0; font-size: 20px;">Security Event Ledger</h3>
-                <p style="color: var(--text-muted);">Latest administrative interactions registered by the session core:</p>
-                <table class="log-table">
-                    <thead>
-                        <tr>
-                            <th>Timestamp</th>
-                            <th>Event Action</th>
-                            <th>Status State</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><?php echo date('Y-m-d H:i:s'); ?></td>
-                            <td>Session Token Regenerated (ID Cycler)</td>
-                            <td class="log-success">SUCCESS</td>
-                        </tr>
-                        <tr>
-                            <td><?php echo date('Y-m-d H:i:s', strtotime('-1 minute')); ?></td>
-                            <td>User Password Hash Verified via `password_verify`</td>
-                            <td class="log-success">SUCCESS</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="panel-register" class="tab-panel">
+                <h3 style="margin-top: 0; font-size: 20px;">Record New Attendance</h3>
+                <p style="color: var(--text-muted);">Enter student details below to log their daily classroom attendance status.</p>
+                
+                <form id="studentForm">
+                    <input type="text" id="name" placeholder="Enter Student Name" required>
+                    <input type="text" id="admission" placeholder="Enter Admission Number" required>
+                    <input type="text" id="course" placeholder="Enter Course" required>
+                    <select id="status">
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                    </select>
+                    <button type="submit">Save Attendance Record</button>
+                </form>
             </div>
 
-            <div id="panel-settings" class="tab-panel">
-                <h3 style="margin-top: 0; font-size: 20px;">Console Configurations</h3>
-                <p style="color: #cbd5e1;">Manage active session tracking and gateway parameters details:</p>
+            <div id="panel-records" class="tab-panel">
+                <h3 style="margin-top: 0; font-size: 20px;">Student Attendance Records</h3>
+                <p style="color: var(--text-muted); margin-bottom: 15px;">Comprehensive log of all student entries recorded for this academic session:</p>
+                
+                <div class="log-table-wrapper">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Admission No</th>
+                                <th>Course</th>
+                                <th>Status State</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTable">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-security" class="tab-panel">
+                <h3 style="margin-top: 0; font-size: 20px;">Account Settings & Preferences</h3>
+                <p style="color: #cbd5e1;">Active configurations running securely in the background environment:</p>
                 <div style="padding: 10px 0;">
                     <label style="display:block; margin-bottom: 10px; color: var(--text-muted);">
-                        <input type="checkbox" checked disabled> Force Session Fixation Protection Layer
+                        <input type="checkbox" checked disabled> Enable Session Hijacking Protection
                     </label>
                     <label style="display:block; margin-bottom: 10px; color: var(--text-muted);">
-                        <input type="checkbox" checked disabled> Enable XSS Input Sanitization Filters
+                        <input type="checkbox" checked disabled> Enable Automated Data Integrity Check
+                    </label>
+                    <label style="display:block; margin-bottom: 10px; color: var(--text-muted);">
+                        <input type="checkbox" checked disabled> Form Sanitization & XSS Protections
                     </label>
                 </div>
             </div>
@@ -329,30 +489,101 @@ $_SESSION['last_login_time'] = time();
     </main>
 
     <script>
+        // Tab switching controller
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function() {
-                // Remove active styling color from all navigation elements
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                
-                // Add active styling to the currently clicked item
                 this.classList.add('active');
                 
-                // Hide all main interface workspace content panels
                 document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active-panel'));
                 
-                // Dynamically targeted panel mapping matching the data attribute
                 const targetTab = this.getAttribute('data-tab');
                 document.getElementById('panel-' + targetTab).classList.add('active-panel');
                 
-                // Dynamically shift the main layout title header text smoothly
                 const titleElement = document.getElementById('console-title');
-                if(targetTab === 'overview') titleElement.innerText = "System Control Console";
-                if(targetTab === 'analytics') titleElement.innerText = "Performance Analytics";
-                if(targetTab === 'system-logs') titleElement.innerText = "Security Core Ledger";
-                if(targetTab === 'settings') titleElement.innerText = "Console Preferences";
+                if(targetTab === 'overview') titleElement.innerText = "Classroom Management Portal";
+                if(targetTab === 'register') titleElement.innerText = "Record New Attendance";
+                if(targetTab === 'records') titleElement.innerText = "Student Attendance Records";
+                if(targetTab === 'security') titleElement.innerText = "Account Settings & Preferences";
             });
         });
-    </script>
 
+        // Backend Integration DOM Hooks
+        const form = document.getElementById("studentForm");
+        const table = document.getElementById("attendanceTable");
+
+        const totalDisplay = document.getElementById("totalStudents");
+        const presentDisplay = document.getElementById("presentStudents");
+        const absentDisplay = document.getElementById("absentStudents");
+
+        // LOAD DATA FROM DATABASE ASYNCHRONOUSLY
+        function loadAttendance() {
+            fetch("fetch.php")
+                .then(res => res.json())
+                .then(data => {
+                    table.innerHTML = "";
+                    let total = 0;
+                    let present = 0;
+                    let absent = 0;
+
+                    data.forEach(student => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${student.name}</td>
+                            <td>${student.admission}</td>
+                            <td>${student.course}</td>
+                            <td class="${student.status === 'Present' ? 'present' : 'absent'}">
+                                ${student.status}
+                            </td>
+                        `;
+                        table.appendChild(row);
+
+                        total++;
+                        if (student.status === "Present") {
+                            present++;
+                        } else {
+                            absent++;
+                        }
+                    });
+
+                    totalDisplay.textContent = total;
+                    presentDisplay.textContent = present;
+                    absentDisplay.textContent = absent;
+                })
+                .catch(err => console.error("Error fetching data: ", err));
+        }
+
+        // DISPATCH DATA AND COMMUNICATE RECORD WITH BACKEND DATABASE
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append("name", document.getElementById("name").value);
+            formData.append("admission", document.getElementById("admission").value);
+            formData.append("course", document.getElementById("course").value);
+            formData.append("status", document.getElementById("status").value);
+
+            fetch("save.php", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.text())
+            .then(result => {
+                if (result.trim() === "success") {
+                    form.reset();
+                    loadAttendance();
+                    
+                    alert("Registered successfully!");
+                    document.querySelector('[data-tab="records"]').click();
+                } else {
+                    alert("System Notification: " + result);
+                }
+            })
+            .catch(err => console.error("Transmission error: ", err));
+        });
+
+        // Initial background initialization load
+        loadAttendance();
+    </script>
 </body>
 </html>

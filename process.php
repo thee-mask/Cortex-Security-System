@@ -1,63 +1,118 @@
 <?php
-// 1. Include security helper layers and the live database link
-require_once __DIR__ . '/includes/security.php';
+session_start();
+// 1. Link your central database connection configuration file
 require_once __DIR__ . '/includes/db.php';
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['register_action'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 2. Verify CSRF Token integrity to protect against request forgery
-    if (!verify_csrf_token($_POST['csrf_token'])) {
-        die("CSRF token validation failed. Security breach prevented.");
+    // Clean and capture user input variables securely
+    $username = isset($_POST['username']) ? trim($_POST['username']) : '';
+    $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+    $action   = isset($_POST['action']) ? trim($_POST['action']) : 'login';
+
+    // Global Validation Guard: Stop empty form submittals
+    if (empty($username) || empty($password)) {
+        header("Location: login.php?error=empty");
+        exit();
     }
 
-    // 3. Sanitize input strings to prevent Cross-Site Scripting (XSS)
-    $username = sanitize_input($_POST['username']);
-    $password = $_POST['password']; 
-
-    // 4. Server-side Input Validation Rules
-    if (strlen($username) < 4 || strlen($password) < 6) {
-        die("Validation Error: Username must be at least 4 characters, Password must be at least 6 characters.");
+    // 2. Automated Database Link Adapter
+    // This dynamically identifies if your db.php file setup uses $pdo, $conn, or $db
+    if (isset($pdo)) {
+        $database = $pdo;
+        $db_type = 'PDO';
+    } elseif (isset($conn)) {
+        $database = $conn;
+        // Determine type based on the object instance style
+        $db_type = ($conn instanceof PDO) ? 'PDO' : 'MySQLi';
+    } elseif (isset($db)) {
+        $database = $db;
+        $db_type = ($db instanceof PDO) ? 'PDO' : 'MySQLi';
+    } else {
+        die("System Configuration Error: Active database connection instance reference variable not found.");
     }
 
-    // 5. One-Way Cryptographic Password Hashing (Bcrypt)
-    $secure_hashed_password = password_hash($password, PASSWORD_BCRYPT);
-
-    // 6. SQL Prepared Statement to safely insert records into the database
-    $query = "INSERT INTO users (username, password) VALUES (?, ?)";
-    $stmt = mysqli_prepare($conn, $query);
-
-    if ($stmt) {
-        // Bind parameters ("ss" means two strings)
-        mysqli_stmt_bind_param($stmt, "ss", $username, $secure_hashed_password);
-        
-        // Execute the database write operation
-        if (mysqli_stmt_execute($stmt)) {
-            // Clean, simplified UI layout response as requested
-            echo "<div style='font-family:Arial, sans-serif; padding:30px; max-width:500px; margin:50px auto; background:#fff; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align: center;'>";
-            echo "<h2 style='color:#28a745;'>Registration Successful!</h2>";
-            echo "<p style='font-size: 16px; margin-bottom: 20px;'>Welcome, <strong>" . htmlspecialchars($username) . "</strong>.</p>";
-            echo "<br><a href='login.php' style='display:inline-block; padding:10px 20px; background:#007BFF; color:#fff; text-decoration:none; border-radius:4px; font-weight: bold;'>Proceed to Secure Login</a>";
-            echo "</div>";
-        } else {
-            // Handle error state if the username is already taken
-            echo "<div style='font-family:Arial, sans-serif; padding:20px; max-width:500px; margin:50px auto; background:#f8d7da; color:#721c24; border-radius:8px; text-align: center;'>";
-            echo "<h3>Registration Failed</h3>";
-            echo "<p>The username <strong>" . htmlspecialchars($username) . "</strong> is already taken. Please try another.</p>";
-            echo "<br><a href='index.php' style='color:#721c24; font-weight:bold;'>Go Back to Form</a>";
-            echo "</div>";
+    // ==========================================
+    // LAYER A: USER REGISTRATION (SIGN UP MODE)
+    // ==========================================
+    if ($action === 'signup') {
+        if (strlen($password) < 6) {
+            header("Location: login.php?error=weak");
+            exit();
         }
 
-        // Close the statement structure safely
-        mysqli_stmt_close($stmt);
-    } else {
-        echo "Database error: Unable to prepare the structural SQL statement.";
-    }
+        // Generate secure cryptographic password hash
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
 
-    // Close the live server connection link
-    mysqli_close($conn);
+        if ($db_type === 'PDO') {
+            try {
+                $stmt = $database->prepare("INSERT INTO users (username, password) VALUES (:username, :password)");
+                $stmt->execute([':username' => $username, ':password' => $hashed_password]);
+                
+                $_SESSION['username'] = $username;
+                $_SESSION['last_login_time'] = time();
+                header("Location: dashboard.php");
+                exit();
+            } catch (PDOException $e) {
+                header("Location: login.php?error=incorrect");
+                exit();
+            }
+        } else {
+            // MySQLi Fallback Execution Strategy
+            $stmt = $database->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("ss", $username, $hashed_password);
+                if ($stmt->execute()) {
+                    $_SESSION['username'] = $username;
+                    $_SESSION['last_login_time'] = time();
+                    header("Location: dashboard.php");
+                    exit();
+                }
+            }
+            header("Location: login.php?error=incorrect");
+            exit();
+        }
+    } 
     
+    // ==========================================
+    // LAYER B: USER AUTHENTICATION (LOGIN MODE)
+    // ==========================================
+    else {
+        $user = null;
+
+        if ($db_type === 'PDO') {
+            try {
+                $stmt = $database->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
+                $stmt->execute([':username' => $username]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                header("Location: login.php?error=incorrect");
+                exit();
+            }
+        } else {
+            // MySQLi Fallback Query Handling
+            $stmt = $database->prepare("SELECT id, username, password FROM users WHERE username = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param("s", $username);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $user = $result->fetch_assoc();
+            }
+        }
+
+        // Evaluate credentials match matrix
+        if ($user && password_verify($password, $user['password'])) {
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['last_login_time'] = time();
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            header("Location: login.php?error=incorrect");
+            exit();
+        }
+    }
 } else {
-    // Force redirect back to entry form if accessed directly via URL parameters
-    header("Location: index.php");
+    header("Location: login.php");
     exit();
 }
+?>
